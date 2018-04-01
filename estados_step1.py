@@ -29,7 +29,7 @@ centro = []
 area = 0.0
 
 
-
+direcao_procurar = 1
 tolerancia_x = 50
 tolerancia_y = 20
 ang_speed = 0.4
@@ -81,6 +81,8 @@ class Procurando(smach.State):
 		global velocidade_saida
 
 		if media is None or len(media)==0:
+    		vel = Twist(Vector3(0, 0, 0), Vector3(0, 0, direcao_procurar*ang_speed))
+			velocidade_saida.publish(vel)
 			return 'Procurando'
 
 		if  math.fabs(media[0]) > math.fabs(centro[0] + tolerancia_x):
@@ -109,17 +111,15 @@ class Seguir(smach.State):
 			return 'Objeto Centralizado'
 		if  math.fabs(media[0]) > math.fabs(centro[0] + tolerancia_x):
 			return 'Centralizar'
+		if math.fabs(media[0]) > math.fabs(centro[0] - 5*tolerancia_x):
+    		direcao_procurar = -1
+			return 'Centralizar'
 		if math.fabs(media[0]) < math.fabs(centro[0] - tolerancia_x):
 			return 'Centralizar'
-		if else math.fabs(media[0]) < math.fabs(centro[0] - 5*tolerancia_x):
-			vel = Twist(Vector3(0, 0, 0), Vector3(0, 0, 0))
-			velocidade_saida.publish(vel)
-			direcao_procurar = 0
-			return 'alinhado'
 		else:
 			vel = Twist(Vector3(0, 0, 0), Vector3(0, 0, 0))
 			velocidade_saida.publish(vel)
-			direcao_procurar = 0
+			direcao_procurar = 1
 			return 'alinhado'
 
 # main
