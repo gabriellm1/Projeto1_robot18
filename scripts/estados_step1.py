@@ -112,14 +112,14 @@ class Seguir(smach.State):
 		if  math.fabs(media[0]) > math.fabs(centro[0] + tolerancia_x):
 			return 'Centralizar'
 		if math.fabs(media[0]) > math.fabs(centro[0] - 5*tolerancia_x):
-    		direcao_procurar = -1
+    		direcao_procurar = 1
 			return 'Centralizar'
 		if math.fabs(media[0]) < math.fabs(centro[0] - tolerancia_x):
 			return 'Centralizar'
 		else:
 			vel = Twist(Vector3(0, 0, 0), Vector3(0, 0, 0))
 			velocidade_saida.publish(vel)
-			direcao_procurar = 1
+			direcao_procurar = -1
 			return 'alinhado'
 
 # main
