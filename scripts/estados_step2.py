@@ -18,6 +18,10 @@ import smach
 import smach_ros
 
 import cormodule
+import le_scan
+import le_imu
+
+
 
 bridge = CvBridge()
 
@@ -119,7 +123,7 @@ class Seguir(smach.State):
 			vel = Twist(Vector3(0, 0, 0), Vector3(0, 0, 0))
 			velocidade_saida.publish(vel)
 			direcao_procurar = -1
-			return 'alinhado'
+			return 'Objeto Centralizado'
 
 # main
 def main():
