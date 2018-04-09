@@ -92,7 +92,7 @@ class Girando(smach.State):
 			velocidade_saida.publish(vel)
 			return 'girando'
 		else:
-			vel = Twist(Vector3(0, 0, 0), Vector3(0, 0, 0))
+			vel = Twist(Vector3(0.1, 0, 0), Vector3(0, 0, 0))
 			velocidade_saida.publish(vel)
 			return 'alinhou'
 
@@ -111,7 +111,7 @@ class Centralizado(smach.State):
 		if math.fabs(media[0]) < math.fabs(centro[0] - tolerancia_x):
 			return 'alinhando'
 		else:
-			vel = Twist(Vector3(0, 0, 0), Vector3(0, 0, 0))
+			vel = Twist(Vector3(0.1, 0, 0), Vector3(0, 0, 0))
 			velocidade_saida.publish(vel)
 			return 'alinhado'
 
