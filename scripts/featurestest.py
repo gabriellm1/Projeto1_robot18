@@ -35,7 +35,7 @@ w, h = template.shape[::-1]
 centro = []
 media = []
 
-atraso = 1.5E9
+atraso = 1.5E8
 
 MIN_MATCH_COUNT=30
 
@@ -154,7 +154,8 @@ def roda_todo_frame(imagem):
     now = rospy.get_rostime()
     imgtime = imagem.header.stamp
     lag = now-imgtime
-    delay = lag.secs
+    delay = lag.nsecs
+    print(delay, atraso, check_delay)
     if delay > atraso and check_delay==True:
         print("Descartando por causa do delay do frame:", delay)
         return 
