@@ -57,7 +57,7 @@ def roda_todo_frame(imagem):
 	lag = now-imgtime
 	delay = lag.secs
 	if delay > atraso and check_delay==True:
-		return 
+		return
 	try:
 		antes = time.clock()
 		cv_image = bridge.compressed_imgmsg_to_cv2(imagem, "bgr8")
@@ -66,7 +66,7 @@ def roda_todo_frame(imagem):
 		cv2.imshow("Camera", cv_image)
 	except CvBridgeError as e:
 		print('ex', e)
-	
+
 
 
 
@@ -101,7 +101,7 @@ class Girando(smach.State):
 
 class Centralizado(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['alinhando', 'alinhado'])
+        smach.State.__init__(self, outcomes=['brecar','alinhando', 'alinhado'])
 
     def execute(self, userdata):
 		global velocidade_saida
@@ -113,10 +113,29 @@ class Centralizado(smach.State):
 		if math.fabs(media[0]) < math.fabs(centro[0] - tolerancia_x):
 			return 'alinhando'
 		else:
+			if min(distances) > 0.2: #Falta ver a métrica da distancia e estipular uma distancia minima
+				vel = Twist(Vector3(0.1, 0, 0), Vector3(0, 0, 0))
+				velocidade_saida.publish(vel)
+				return 'alinhado' # Continua seguindo reto
+			else:
+				vel = Twist(Vector3(-0.1, 0, 0), Vector3(0, 0, 0))
+				velocidade_saida.publish(vel)
+				return 'brecar'
+
+class Parar(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=['brecar','girando'])
+    def execute(self, userdata):
+		global velocidade_saida
+
+		if min(distances) < 0.2:
+			vel = Twist(Vector3(-0.1, 0, 0), Vector3(0, 0, 0))
+			velocidade_saida.publish(vel)
+			return 'brecar'
+		else:
 			vel = Twist(Vector3(0, 0, 0), Vector3(0, 0, 0))
 			velocidade_saida.publish(vel)
-			# if min(distances) > 2: #Falta ver a métrica da distancia e estipular uma distancia minima
-			return 'alinhado' # Continua seguindo reto
+			return 'girando'
 
 
 # main
@@ -125,7 +144,7 @@ def main():
 	global buffer
 	rospy.init_node('cor_estados')
 
-	# Para usar a webcam 
+	# Para usar a webcam
 	#recebedor = rospy.Subscriber("/cv_camera/image_raw/compressed", CompressedImage, roda_todo_frame, queue_size=1, buff_size = 2**24)
 	recebedor = rospy.Subscriber("/raspicam_node/image/compressed", CompressedImage, roda_todo_frame, queue_size=10, buff_size = 2**24)
 
@@ -137,17 +156,18 @@ def main():
 	# Open the container
 	with sm:
 	    # Add states to the container
-	    #smach.StateMachine.add('LONGE', Longe(), 
-	    #                       transitions={'ainda_longe':'ANDANDO', 
+	    #smach.StateMachine.add('LONGE', Longe(),
+	    #                       transitions={'ainda_longe':'ANDANDO',
 	    #                                    'perto':'terminei'})
-	    #smach.StateMachine.add('ANDANDO', Andando(), 
+	    #smach.StateMachine.add('ANDANDO', Andando(),
 	    #                       transitions={'ainda_longe':'LONGE'})
 	    smach.StateMachine.add('GIRANDO', Girando(),
 	                            transitions={'girando': 'GIRANDO',
 	                            'alinhou':'CENTRO'})
 	    smach.StateMachine.add('CENTRO', Centralizado(),
 	                            transitions={'alinhando': 'GIRANDO',
-	                            'alinhado':'CENTRO'})
+	                            'alinhado':'CENTRO',
+								'brecar':'PARAR'})
 
 
 	# Execute SMACH plan
