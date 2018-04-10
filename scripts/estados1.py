@@ -168,6 +168,9 @@ def main():
 	                            transitions={'alinhando': 'GIRANDO',
 	                            'alinhado':'CENTRO',
 								'brecar':'PARAR'})
+		smach.StateMachine.add('PARAR', Parar(),
+	                            transitions={'girando': 'GIRANDO',
+								'brecar':'PARAR'})
 
 
 	# Execute SMACH plan
