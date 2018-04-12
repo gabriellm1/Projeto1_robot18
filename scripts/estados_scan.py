@@ -18,22 +18,23 @@ import smach
 import smach_ros
 
 import cormodule
-import le_scan
-import le_imu
-
+import le_scan_teste
 
 
 bridge = CvBridge()
 
 cv_image = None
+global distances
+global distMin
+
 
 # Variáveis para permitir que o roda_todo_frame troque dados com a máquina de estados
 media = []
 centro = []
 area = 0.0
+distances = []
 
 
-direcao_procurar = 1
 tolerancia_x = 50
 tolerancia_y = 20
 ang_speed = 0.4
@@ -44,6 +45,18 @@ tolerancia_area = 20000
 atraso = 1.5
 check_delay = False # Só usar se os relógios ROS da Raspberry e do Linux desktop estiverem sincronizados
 
+def scaneou(dado):
+	global menorDist
+    print("Faixa valida: ", dado.range_min , " - ", dado.range_max )
+	distMin  = dado.range_min
+	print("Leituras:")
+	distances = np.array(dado.ranges).round(decimals=2)
+	menorDist = dado.range_max
+	for i in distances:
+    		if i !==0 and i < menorDist:
+    				menorDist = i
+	#print("Intensities")
+	#print(np.array(dado.intensities).round(decimals=2))
 
 
 
@@ -53,6 +66,7 @@ def roda_todo_frame(imagem):
 	global media
 	global centro
 	global area
+	global menorDist
 
 	now = rospy.get_rostime()
 	imgtime = imagem.header.stamp
@@ -64,6 +78,8 @@ def roda_todo_frame(imagem):
 		antes = time.clock()
 		cv_image = bridge.compressed_imgmsg_to_cv2(imagem, "bgr8")
 		media, centro, area = cormodule.identifica_cor(cv_image)
+		#scaneou(cv_image)
+		recebe_scan = rospy.Subscriber("/scan", LaserScan, scaneou)
 		depois = time.clock()
 		cv2.imshow("Camera", cv_image)
 	except CvBridgeError as e:
@@ -77,63 +93,82 @@ def roda_todo_frame(imagem):
 ## Classes - estados
 
 
-class Procurando(smach.State):
+class Girando(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['Objeto Encontrado', 'Procurando'])
+        smach.State.__init__(self, outcomes=['alinhou', 'girando'])
 
     def execute(self, userdata):
 		global velocidade_saida
+		global menorDist
 
 		if media is None or len(media)==0:
-    		#vel = Twist(Vector3(0, 0, 0), Vector3(0, 0, direcao_procurar*ang_speed))
-			#velocidade_saida.publish(vel)
-			return 'Procurando'
+			return 'girando' #Continua girando
+
 		if  math.fabs(media[0]) > math.fabs(centro[0] + tolerancia_x):
 			vel = Twist(Vector3(0, 0, 0), Vector3(0, 0, -ang_speed))
 			velocidade_saida.publish(vel)
-			return 'Procurando'
+			return 'girando' #Continua girando
 		if math.fabs(media[0]) < math.fabs(centro[0] - tolerancia_x):
 			vel = Twist(Vector3(0, 0, 0), Vector3(0, 0, ang_speed))
 			velocidade_saida.publish(vel)
-			return 'Procurando'
+			return 'girando' #Continua girando
 		else:
 			vel = Twist(Vector3(0, 0, 0), Vector3(0, 0, 0))
 			velocidade_saida.publish(vel)
-			return 'Objeto Encontrado'
+			return 'alinhou' #Alinhou! Agora vai seguir(Centralizado)
 
 
-class Seguir(smach.State):
+class Centralizado(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['Centralizar', 'Objeto Centralizado'])
+        smach.State.__init__(self, outcomes=['brecar','alinhando', 'alinhado'])
 
     def execute(self, userdata):
 		global velocidade_saida
-
+		global menorDist
 
 		if media is None:
-			return 'Objeto Centralizado'
+			return 'alinhou'
 		if  math.fabs(media[0]) > math.fabs(centro[0] + tolerancia_x):
-			return 'Centralizar'
-		if math.fabs(media[0]) > math.fabs(centro[0] - 5*tolerancia_x):
-			direcao_procurar = 1
-			return 'Centralizar'
+			return 'alinhando'  # alinhaNdo volta pro girando(busca)
 		if math.fabs(media[0]) < math.fabs(centro[0] - tolerancia_x):
-			return 'Centralizar'
+			return 'alinhando'
+		else:
+			if menorDist > 0.2: #Falta ver a métrica da distancia e estipular uma distancia minima
+				vel = Twist(Vector3(0.1, 0, 0), Vector3(0, 0, 0))
+				velocidade_saida.publish(vel)
+				return 'alinhado' # Continua seguindo reto
+			else:
+				vel = Twist(Vector3(-0.1, 0, 0), Vector3(0, 0, 0))
+				velocidade_saida.publish(vel)
+				return 'brecar' #Breca pra dps dar ré
+
+class Parar(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=['brecar','girando'])
+    def execute(self, userdata):
+		global velocidade_saida
+		global menorDist
+
+		if menorDist < 0.2:
+			vel = Twist(Vector3(-0.1, 0, 0), Vector3(0, 0, 0))
+			velocidade_saida.publish(vel)
+			return 'brecar' #Da ré
 		else:
 			vel = Twist(Vector3(0, 0, 0), Vector3(0, 0, 0))
 			velocidade_saida.publish(vel)
-			direcao_procurar = -1
-			return 'Objeto Centralizado'
+			return 'girando' #Ja ta longe, pode procurar denovo
+
 
 # main
 def main():
 	global velocidade_saida
 	global buffer
+	global menorDist
 	rospy.init_node('cor_estados')
 
 	# Para usar a webcam
-	recebedor = rospy.Subscriber("/cv_camera/image_raw/compressed", CompressedImage, roda_todo_frame, queue_size=1, buff_size = 2**24)
-	#recebedor = rospy.Subscriber("/raspicam_node/image/compressed", CompressedImage, roda_todo_frame, queue_size=10, buff_size = 2**24)
+	#recebedor = rospy.Subscriber("/cv_camera/image_raw/compressed", CompressedImage, roda_todo_frame, queue_size=1, buff_size = 2**24)
+	recebedor = rospy.Subscriber("/raspicam_node/image/compressed", CompressedImage, roda_todo_frame, queue_size=10, buff_size = 2**24)
 
 	velocidade_saida = rospy.Publisher("/cmd_vel", Twist, queue_size = 1)
 
@@ -148,12 +183,16 @@ def main():
 	    #                                    'perto':'terminei'})
 	    #smach.StateMachine.add('ANDANDO', Andando(),
 	    #                       transitions={'ainda_longe':'LONGE'})
-	    smach.StateMachine.add('PROCURANDO', Procurando(),
-	                            transitions={'Procurando': 'PROCURANDO',
-	                            'Objeto Encontrado':'CENTRO'})
-	    smach.StateMachine.add('CENTRO', Seguir(),
-	                            transitions={'Centralizar': 'PROCURANDO',
-	                            'Objeto Centralizado':'CENTRO'})
+	    smach.StateMachine.add('GIRANDO', Girando(),
+	                            transitions={'girando': 'GIRANDO',
+	                            'alinhou':'CENTRO'})
+	    smach.StateMachine.add('CENTRO', Centralizado(),
+	                            transitions={'alinhando': 'GIRANDO',
+	                            'alinhado':'CENTRO',
+								'brecar':'PARAR'})
+		smach.StateMachine.add('PARAR', Parar(),
+	                            transitions={'girando': 'GIRANDO',
+								'brecar':'PARAR'})
 
 
 	# Execute SMACH plan
