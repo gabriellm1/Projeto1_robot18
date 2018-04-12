@@ -18,6 +18,7 @@ import smach
 import smach_ros
 
 import cormodule
+import featuremodule
 import le_scan_teste
 
 
@@ -77,8 +78,17 @@ def roda_todo_frame(imagem):
 	try:
 		antes = time.clock()
 		cv_image = bridge.compressed_imgmsg_to_cv2(imagem, "bgr8")
-		media, centro, area = cormodule.identifica_cor(cv_image)
-		#scaneou(cv_image)
+		media_feature, centro_feature = featuremodule.identifica_feature(cv_image)
+		media_cor, centro_cor, area = cormodule.identifica_cor(cv_image)
+		
+		if media_feature != None :
+			media = media_feature
+			centro = centro_feature
+		else:
+			media = media_cor
+			centro = centro_cor
+
+			
 		recebe_scan = rospy.Subscriber("/scan", LaserScan, scaneou)
 		depois = time.clock()
 		cv2.imshow("Camera", cv_image)
