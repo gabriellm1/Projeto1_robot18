@@ -10,35 +10,33 @@ from sensor_msgs.msg import LaserScan
 
 
 def scaneou(dado):
-    print("Faixa valida: ", dado.range_min , " - ", dado.range_max )
-    print("Leituras:")
-    distances = np.array(dado.ranges).round(decimals=2)
-    #print(np.array(dado.ranges).round(decimals=2))
-    #print("Intensities")
-    #print(np.array(dado.intensities).round(decimals=2))
+	print("Faixa valida: ", dado.range_min , " - ", dado.range_max )
+	print("Leituras:")
+	#print(np.array(dado.ranges).round(decimals=2))
+	#print("Intensities")
+	#print(np.array(dado.intensities).round(decimals=2))
 
 def medir_distancias(dado):
-    #print("Faixa valida: ", dado.range_min , " - ", dado.range_max )
-    print("Leituras:")
-    distances = np.array(dado.ranges).round(decimals=2)
-    print(distances)
-    #print("Intensities")
-    #print(np.array(dado.intensities).round(decimals=2))
-    return distances
+    print("Faixa valida: ", dado.range_min , " - ", dado.range_max )
+	print("Leituras:")
+	distances = np.array(dado.ranges).round(decimals=2)
+	print(distances)
+	#print("Intensities")
+	#print(np.array(dado.intensities).round(decimals=2))
+	return distances
 
 
 if __name__=="__main__":
 
-    rospy.init_node("le_scan")
-# 
-    velocidade_saida = rospy.Publisher("/cmd_vel", Twist, queue_size = 3 )
-    recebe_scan = rospy.Subscriber("/scan", LaserScan, scaneou)
-    print(recebe_scan)
+	rospy.init_node("le_scan")
 
-    # while not rospy.is_shutdown():
-    #   print("Oeee")
-    #   velocidade = Twist(Vector3(0, 0, 0), Vector3(0, 0, 1))
-    #   velocidade_saida.publish(velocidade)
-    #   rospy.sleep(2)
+	velocidade_saida = rospy.Publisher("/cmd_vel", Twist, queue_size = 3 )
+	recebe_scan = rospy.Subscriber("/scan", LaserScan, scaneou)
+	print(recebe_scan)
 
+	# while not rospy.is_shutdown():
+	# 	print("Oeee")
+	# 	velocidade = Twist(Vector3(0, 0, 0), Vector3(0, 0, 1))
+	# 	velocidade_saida.publish(velocidade)
+	# 	rospy.sleep(2)
 
