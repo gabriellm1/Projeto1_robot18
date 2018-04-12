@@ -16,9 +16,10 @@ from sensor_msgs.msg import Image, CompressedImage
 from cv_bridge import CvBridge, CvBridgeError
 import smach
 import smach_ros
+from sensor_msgs.msg import LaserScan
 
 import cormodule
-import le_scan_teste
+#import le_scan
 
 
 bridge = CvBridge()
@@ -47,14 +48,14 @@ check_delay = False # Só usar se os relógios ROS da Raspberry e do Linux deskt
 
 def scaneou(dado):
 	global menorDist
-    print("Faixa valida: ", dado.range_min , " - ", dado.range_max )
+	print("Faixa valida: ", dado.range_min , " - ", dado.range_max )
 	distMin  = dado.range_min
 	print("Leituras:")
 	distances = np.array(dado.ranges).round(decimals=2)
 	menorDist = dado.range_max
 	for i in distances:
-    		if i !==0 and i < menorDist:
-    				menorDist = i
+		if i != 0 and i < menorDist:
+			menorDist = i
 	#print("Intensities")
 	#print(np.array(dado.intensities).round(decimals=2))
 
@@ -79,7 +80,6 @@ def roda_todo_frame(imagem):
 		cv_image = bridge.compressed_imgmsg_to_cv2(imagem, "bgr8")
 		media, centro, area = cormodule.identifica_cor(cv_image)
 		#scaneou(cv_image)
-		recebe_scan = rospy.Subscriber("/scan", LaserScan, scaneou)
 		depois = time.clock()
 		cv2.imshow("Camera", cv_image)
 	except CvBridgeError as e:
@@ -94,10 +94,10 @@ def roda_todo_frame(imagem):
 
 
 class Girando(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['alinhou', 'girando'])
+	def __init__(self):
+		smach.State.__init__(self, outcomes=['alinhou', 'girando'])
 
-    def execute(self, userdata):
+	def execute(self, userdata):
 		global velocidade_saida
 		global menorDist
 
@@ -119,10 +119,10 @@ class Girando(smach.State):
 
 
 class Centralizado(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['brecar','alinhando', 'alinhado'])
+	def __init__(self):
+		smach.State.__init__(self, outcomes=['brecar','alinhando', 'alinhado'])
 
-    def execute(self, userdata):
+	def execute(self, userdata):
 		global velocidade_saida
 		global menorDist
 
@@ -132,7 +132,7 @@ class Centralizado(smach.State):
 			return 'alinhando'  # alinhaNdo volta pro girando(busca)
 		if math.fabs(media[0]) < math.fabs(centro[0] - tolerancia_x):
 			return 'alinhando'
-		else:
+		if menorDist:
 			if menorDist > 0.2: #Falta ver a métrica da distancia e estipular uma distancia minima
 				vel = Twist(Vector3(0.1, 0, 0), Vector3(0, 0, 0))
 				velocidade_saida.publish(vel)
@@ -143,9 +143,9 @@ class Centralizado(smach.State):
 				return 'brecar' #Breca pra dps dar ré
 
 class Parar(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['brecar','girando'])
-    def execute(self, userdata):
+	def __init__(self):
+		smach.State.__init__(self, outcomes=['brecar','girando'])
+	def execute(self, userdata):
 		global velocidade_saida
 		global menorDist
 
@@ -169,7 +169,7 @@ def main():
 	# Para usar a webcam
 	#recebedor = rospy.Subscriber("/cv_camera/image_raw/compressed", CompressedImage, roda_todo_frame, queue_size=1, buff_size = 2**24)
 	recebedor = rospy.Subscriber("/raspicam_node/image/compressed", CompressedImage, roda_todo_frame, queue_size=10, buff_size = 2**24)
-
+	recebe_scan = rospy.Subscriber("/scan", LaserScan, scaneou)
 	velocidade_saida = rospy.Publisher("/cmd_vel", Twist, queue_size = 1)
 
 	# Create a SMACH state machine
@@ -177,21 +177,21 @@ def main():
 
 	# Open the container
 	with sm:
-	    # Add states to the container
-	    #smach.StateMachine.add('LONGE', Longe(),
-	    #                       transitions={'ainda_longe':'ANDANDO',
-	    #                                    'perto':'terminei'})
-	    #smach.StateMachine.add('ANDANDO', Andando(),
-	    #                       transitions={'ainda_longe':'LONGE'})
-	    smach.StateMachine.add('GIRANDO', Girando(),
-	                            transitions={'girando': 'GIRANDO',
-	                            'alinhou':'CENTRO'})
-	    smach.StateMachine.add('CENTRO', Centralizado(),
-	                            transitions={'alinhando': 'GIRANDO',
-	                            'alinhado':'CENTRO',
+		# Add states to the container
+		#smach.StateMachine.add('LONGE', Longe(),
+		#                       transitions={'ainda_longe':'ANDANDO',
+		#                                    'perto':'terminei'})
+		#smach.StateMachine.add('ANDANDO', Andando(),
+		#                       transitions={'ainda_longe':'LONGE'})
+		smach.StateMachine.add('GIRANDO', Girando(),
+								transitions={'girando': 'GIRANDO',
+								'alinhou':'CENTRO'})
+		smach.StateMachine.add('CENTRO', Centralizado(),
+								transitions={'alinhando': 'GIRANDO',
+								'alinhado':'CENTRO',
 								'brecar':'PARAR'})
 		smach.StateMachine.add('PARAR', Parar(),
-	                            transitions={'girando': 'GIRANDO',
+								transitions={'girando': 'GIRANDO',
 								'brecar':'PARAR'})
 
 
@@ -201,4 +201,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+
+	main()
