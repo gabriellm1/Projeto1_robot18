@@ -53,7 +53,7 @@ def scaneou(dado):
 	distances = np.array(dado.ranges).round(decimals=2)
 	menorDist = dado.range_max
 	for i in distances:
-    		if i != 0 < menorDist:
+    		if i !==0 and i < menorDist:
     				menorDist = i
 	#print("Intensities")
 	#print(np.array(dado.intensities).round(decimals=2))
