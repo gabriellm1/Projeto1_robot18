@@ -78,6 +78,8 @@ def roda_todo_frame(imagem):
 		antes = time.clock()
 		cv_image = bridge.compressed_imgmsg_to_cv2(imagem, "bgr8")
 		media, centro, area = cormodule.identifica_cor(cv_image)
+		#scaneou(cv_image)
+		recebe_scan = rospy.Subscriber("/scan", LaserScan, scaneou)
 		depois = time.clock()
 		cv2.imshow("Camera", cv_image)
 	except CvBridgeError as e:
