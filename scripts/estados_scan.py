@@ -17,7 +17,9 @@ from cv_bridge import CvBridge, CvBridgeError
 import smach
 import smach_ros
 from sensor_msgs.msg import LaserScan
-
+from sensor_msgs.msg import Imu
+import transformations
+import math
 import cormodule
 #import le_scan
 
@@ -27,6 +29,8 @@ bridge = CvBridge()
 cv_image = None
 global distances
 global distMin
+
+aceleracao = []
 
 
 # Variáveis para permitir que o roda_todo_frame troque dados com a máquina de estados
@@ -45,6 +49,27 @@ tolerancia_area = 20000
 # Atraso máximo permitido entre a imagem sair do Turbletbot3 e chegar no laptop do aluno
 atraso = 1.5
 check_delay = False # Só usar se os relógios ROS da Raspberry e do Linux desktop estiverem sincronizados
+
+def leu_imu(dado):
+	global aceleracao
+	quat = dado.orientation
+	lista = [quat.x, quat.y, quat.z, quat.w]
+	angulos = np.degrees(transformations.euler_from_quaternion(lista))
+	aceleracao = dado.linear_acceleration.x
+	mensagem = """
+	Tempo: {:}
+	Orientação: {:.2f}, {:.2f}, {:.2f}
+	Vel. angular: x {:.2f}, y {:.2f}, z {:.2f}\
+
+	Aceleração linear:
+	x: {:.2f}
+	y: {:.2f}
+	z: {:.2f}
+
+
+""".format(dado.header.stamp, angulos[0], angulos[1], angulos[2], dado.angular_velocity.x, dado.angular_velocity.y, dado.angular_velocity.z, dado.linear_acceleration.x, dado.linear_acceleration.y, dado.linear_acceleration.z)
+	print(mensagem)
+
 
 def scaneou(dado):
 	global menorDist
@@ -68,6 +93,7 @@ def roda_todo_frame(imagem):
 	global centro
 	global area
 	global menorDist
+	global aceleracao
 
 	now = rospy.get_rostime()
 	imgtime = imagem.header.stamp
@@ -95,12 +121,22 @@ def roda_todo_frame(imagem):
 
 class Girando(smach.State):
 	def __init__(self):
-		smach.State.__init__(self, outcomes=['alinhou', 'girando'])
+		smach.State.__init__(self, outcomes=['brecar','alinhou', 'girando'])
 
 	def execute(self, userdata):
 		global velocidade_saida
 		global menorDist
+		global aceleracao
 
+		if aceleracao:
+			if aceleracao < -2:
+				print("Brecaaaaaaaaaaaaaaaaaaaaaaaaaaaaar")
+				return 'brecar'
+		# if aceleracao: #and aceleracao < -2:
+		# 	vel = Twist(Vector3(-1, 0, 0), Vector3(0, 0, 0))
+		# 	velocidade_saida.publish(vel)
+		# 	print("Bateu!")
+		# 	return 'brecar'
 		if media is None or len(media)==0:
 			return 'girando' #Continua girando
 
@@ -125,6 +161,7 @@ class Centralizado(smach.State):
 	def execute(self, userdata):
 		global velocidade_saida
 		global menorDist
+		global aceleracao
 
 		if media is None:
 			return 'alinhou'
@@ -148,6 +185,7 @@ class Parar(smach.State):
 	def execute(self, userdata):
 		global velocidade_saida
 		global menorDist
+		global aceleracao
 
 		if menorDist < 0.2:
 			vel = Twist(Vector3(-0.1, 0, 0), Vector3(0, 0, 0))
@@ -164,6 +202,7 @@ def main():
 	global velocidade_saida
 	global buffer
 	global menorDist
+	global aceleracao
 	rospy.init_node('cor_estados')
 
 	# Para usar a webcam
@@ -171,6 +210,8 @@ def main():
 	recebedor = rospy.Subscriber("/raspicam_node/image/compressed", CompressedImage, roda_todo_frame, queue_size=10, buff_size = 2**24)
 	recebe_scan = rospy.Subscriber("/scan", LaserScan, scaneou)
 	velocidade_saida = rospy.Publisher("/cmd_vel", Twist, queue_size = 1)
+	recebe_imu = rospy.Subscriber("/imu", Imu, leu_imu)
+
 
 	# Create a SMACH state machine
 	sm = smach.StateMachine(outcomes=['terminei'])
@@ -184,7 +225,8 @@ def main():
 		#smach.StateMachine.add('ANDANDO', Andando(),
 		#                       transitions={'ainda_longe':'LONGE'})
 		smach.StateMachine.add('GIRANDO', Girando(),
-								transitions={'girando': 'GIRANDO',
+								transitions={'brecar':'PARAR',
+								'girando': 'GIRANDO',
 								'alinhou':'CENTRO'})
 		smach.StateMachine.add('CENTRO', Centralizado(),
 								transitions={'alinhando': 'GIRANDO',
@@ -201,5 +243,4 @@ def main():
 
 
 if __name__ == '__main__':
-
 	main()
