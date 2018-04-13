@@ -141,8 +141,9 @@ class Girando(smach.State):
 		# 	print("Bateu!")
 		# 	return 'brecar'
 		print(media_feature)
-		if len(media_feature) != 0:
-			return 'ré'
+		if media_feature:
+			if media_feature != (0,0):
+				return 'ré'
 		if media is None or len(media)==0:
 			return 'girando' #Continua girando
 
@@ -194,7 +195,7 @@ class Parar(smach.State):
 		global aceleracao
 
 		if menorDist < 0.2:
-			vel = Twist(Vector3(-0.1, 0, 0), Vector3(0, 0, 0))
+			vel = Twist(Vector3(-0.05, 0, 0), Vector3(0, 0, 0))
 			velocidade_saida.publish(vel)
 			return 'brecar' #Da ré
 		else:
@@ -211,12 +212,12 @@ class Fugir(smach.State):
 		global menorDist
 		global aceleracao
 
-		if media_feature is None:
+		if media_feature or media_feature == (0,0) is None:
 			return 'girando'
 		if  media_feature:
 			if menorDist:
 				if menorDist > 0.2: #Falta ver a métrica da distancia e estipular uma distancia minima
-					vel = Twist(Vector3(-0.2, 0, 0), Vector3(0, 0, 0))
+					vel = Twist(Vector3(-0.1, 0, 0), Vector3(0, 0, 0))
 					velocidade_saida.publish(vel)
 					return 'ré' # Continua seguindo reto
 				else:

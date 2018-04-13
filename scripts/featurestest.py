@@ -37,7 +37,7 @@ media = []
 
 atraso = 1.5E8
 
-MIN_MATCH_COUNT=45
+MIN_MATCH_COUNT= 30
 
 detector=cv2.xfeatures2d.SIFT_create()
 
@@ -121,14 +121,14 @@ def identifica_feature(frame):
         media_x = (x0+x1+x2+x3)/4.0
         media_y = (y0+y1+y2+y3)/4.0
 
-        media = (media_x, media_y)  
+        media = (media_x, media_y)
 
-        centro = (frame.shape[1]//2, frame.shape[0]//2) 
-        
+        centro = (frame.shape[1]//2, frame.shape[0]//2)
+
         dif_x = media[0]-centro[0]
         dif_y = media[1]-centro[1]
 
-        
+
         tx = x3 - x0
         ty = y1 - y0
         tamanho = (tx*ty)
@@ -158,7 +158,7 @@ def roda_todo_frame(imagem):
     print(delay, atraso, check_delay)
     if delay > atraso and check_delay==True:
         print("Descartando por causa do delay do frame:", delay)
-        return 
+        return
     try:
         antes = time.clock()
         cv_image = bridge.compressed_imgmsg_to_cv2(imagem, "bgr8")
@@ -173,8 +173,8 @@ if __name__=="__main__":
     rospy.init_node("projeto")
     # Para usar a Raspberry Pi
     recebedor = rospy.Subscriber("/raspicam_node/image/compressed", CompressedImage, roda_todo_frame, queue_size=1, buff_size = 2**24)
-    
-    # Para usar a webcam 
+
+    # Para usar a webcam
     #recebedor = rospy.Subscriber("/cv_camera/image_raw/compressed", CompressedImage, roda_todo_frame, queue_size=10, buff_size = 2**24)
 
     velocidade_saida = rospy.Publisher("/cmd_vel", Twist, queue_size = 1)
