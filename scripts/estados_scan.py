@@ -21,7 +21,7 @@ from sensor_msgs.msg import Imu
 import transformations
 import math
 import cormodule
-#import le_scan
+import featuremodule
 
 
 bridge = CvBridge()
@@ -105,6 +105,7 @@ def roda_todo_frame(imagem):
 		antes = time.clock()
 		cv_image = bridge.compressed_imgmsg_to_cv2(imagem, "bgr8")
 		media, centro, area = cormodule.identifica_cor(cv_image)
+		media_feature , centro_feature = featuremodule.indentifica_feature(cv_image)
 		#scaneou(cv_image)
 		depois = time.clock()
 		cv2.imshow("Camera", cv_image)
@@ -121,7 +122,7 @@ def roda_todo_frame(imagem):
 
 class Girando(smach.State):
 	def __init__(self):
-		smach.State.__init__(self, outcomes=['brecar','alinhou', 'girando'])
+		smach.State.__init__(self, outcomes=['brecar','ré','alinhou', 'girando'])
 
 	def execute(self, userdata):
 		global velocidade_saida
@@ -137,6 +138,8 @@ class Girando(smach.State):
 		# 	velocidade_saida.publish(vel)
 		# 	print("Bateu!")
 		# 	return 'brecar'
+		if media_feature:
+			return 'ré'
 		if media is None or len(media)==0:
 			return 'girando' #Continua girando
 
@@ -196,7 +199,31 @@ class Parar(smach.State):
 			velocidade_saida.publish(vel)
 			return 'girando' #Ja ta longe, pode procurar denovo
 
+class Fugir(smach.State):
+	def __init__(self):
+		smach.State.__init__(self, outcomes=['girando','ré', 'brecar'])
 
+	def execute(self, userdata):
+		global velocidade_saida
+		global menorDist
+		global aceleracao
+
+		if media_feature is None:
+			return 'girando'
+		if  media_feature:
+			if menorDist:
+				if menorDist > 0.2: #Falta ver a métrica da distancia e estipular uma distancia minima
+					vel = Twist(Vector3(-0.2, 0, 0), Vector3(0, 0, 0))
+					velocidade_saida.publish(vel)
+					return 'ré' # Continua seguindo reto
+				else:
+					vel = Twist(Vector3(0, 0, 0), Vector3(0, 0, 0))
+					velocidade_saida.publish(vel)
+					return 'brecar' #Breca pra dps dar ré
+			else:
+				return 'ré'  # alinhaNdo volta pro girando(busca)
+
+		
 # main
 def main():
 	global velocidade_saida
@@ -226,6 +253,7 @@ def main():
 		#                       transitions={'ainda_longe':'LONGE'})
 		smach.StateMachine.add('GIRANDO', Girando(),
 								transitions={'brecar':'PARAR',
+								'ré': 'FUGIR',
 								'girando': 'GIRANDO',
 								'alinhou':'CENTRO'})
 		smach.StateMachine.add('CENTRO', Centralizado(),
@@ -235,7 +263,10 @@ def main():
 		smach.StateMachine.add('PARAR', Parar(),
 								transitions={'girando': 'GIRANDO',
 								'brecar':'PARAR'})
-
+		smach.StateMachine.add('FUGIR', Fugir(),
+								transitions={'girando': 'GIRANDO',
+								'brecar':'PARAR',
+								'ré' : 'FUGIR'})
 
 	# Execute SMACH plan
 	outcome = sm.execute()
