@@ -138,6 +138,8 @@ class Girando(smach.State):
 		# 	print("Bateu!")
 		# 	return 'brecar'
 		if media is None or len(media)==0:
+			vel = Twist(Vector3(0, 0, 0), Vector3(0, 0, -ang_speed))
+			velocidade_saida.publish(vel)
 			return 'girando' #Continua girando
 
 		if  math.fabs(media[0]) > math.fabs(centro[0] + tolerancia_x):
@@ -163,6 +165,10 @@ class Centralizado(smach.State):
 		global menorDist
 		global aceleracao
 
+		if aceleracao:
+			if aceleracao < -2:
+				print("Brecaaaaaaaaaaaaaaaaaaaaaaaaaaaaar")
+				return 'brecar'
 		if media is None:
 			return 'alinhou'
 		if  math.fabs(media[0]) > math.fabs(centro[0] + tolerancia_x):
@@ -187,6 +193,12 @@ class Parar(smach.State):
 		global menorDist
 		global aceleracao
 
+		if aceleracao:
+			if aceleracao > 1:
+				print("Bateu de ré")
+				vel = Twist(Vector3(1, 0, 0), Vector3(0, 0, 0))
+				velocidade_saida.publish(vel)
+				return 'girando'
 		if menorDist < 0.2:
 			vel = Twist(Vector3(-0.1, 0, 0), Vector3(0, 0, 0))
 			velocidade_saida.publish(vel)
