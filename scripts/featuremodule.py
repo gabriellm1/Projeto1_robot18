@@ -9,10 +9,47 @@ from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Image, CompressedImage
 from cv_bridge import CvBridge, CvBridgeError
 
+
+# Parametros para indentificar case
+template = cv2.imread('case.png',0)
+w, h = template.shape[::-1]
+
+centro = []
+media = []
+
+atraso = 1.5E8
+
+MIN_MATCH_COUNT=30
+
+detector=cv2.xfeatures2d.SIFT_create()
+
+FLANN_INDEX_KDITREE=0
+flannParam=dict(algorithm=FLANN_INDEX_KDITREE,tree=5)
+flann=cv2.FlannBasedMatcher(flannParam,{})
+
+madKP,madDesc=detector.detectAndCompute(template,None)
+
+
+
+# Returns an image containing the borders of the image
+# sigma is how far from the median we are setting the thresholds
+
+
+def auto_canny(image, sigma=0.33):
+    # compute the median of the single channel pixel intensities
+    v = np.median(image)
+
+    # apply automatic Canny edge detection using the computed median
+    lower = int(max(0, (1.0 - sigma) * v))
+    upper = int(min(255, (1.0 + sigma) * v))
+    edged = cv2.Canny(image, lower, upper)
+
+    # return the edged image
+    return edged
+
+
 def identifica_feature(frame):
 
-    global centro
-    global media
     # Capture frame-by-frame
     print("New frame")
 
@@ -22,10 +59,12 @@ def identifica_feature(frame):
 
     # A gaussian blur to get rid of the noise in the image
     blur = cv2.GaussianBlur(gray,(5,5),0)
+    #blur = gray
     # Detect the edges present in the image
     bordas = auto_canny(blur)
 
-
+    #gray=cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
+    #grayKP,grayDesc=detector.detectAndCompute(gray,None)
     matches=flann.knnMatch(grayDesc,madDesc,k=2)
 
     goodMatch=[]
