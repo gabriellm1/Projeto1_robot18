@@ -21,9 +21,9 @@ def identifica_cor(frame):
 	Segmenta o maior objeto cuja cor é parecida com cor_h (HUE da cor, no espaço HSV).
 	'''
 
-	# No OpenCV, o canal H vai de 0 até 179, logo cores similares ao 
-	# vermelho puro (H=0) estão entre H=-8 e H=8. 
-	# Precisamos dividir o inRange em duas partes para fazer a detecção 
+	# No OpenCV, o canal H vai de 0 até 179, logo cores similares ao
+	# vermelho puro (H=0) estão entre H=-8 e H=8.
+	# Precisamos dividir o inRange em duas partes para fazer a detecção
 	# do vermelho:
 	frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
@@ -36,14 +36,14 @@ def identifica_cor(frame):
 	# segmentado_cor += cv2.inRange(frame_hsv, cor_menor, cor_maior)
 
 
-	# A operação MORPH_CLOSE fecha todos os buracos na máscara menores 
-	# que um quadrado 7x7. É muito útil para juntar vários 
+	# A operação MORPH_CLOSE fecha todos os buracos na máscara menores
+	# que um quadrado 7x7. É muito útil para juntar vários
 	# pequenos contornos muito próximos em um só.
 	segmentado_cor = cv2.morphologyEx(segmentado_cor,cv2.MORPH_CLOSE,np.ones((7, 7)))
 
 	# Encontramos os contornos na máscara e selecionamos o de maior área
-	#contornos, arvore = cv2.findContours(segmentado_cor.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)	
-	img_out, contornos, arvore = cv2.findContours(segmentado_cor.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) 
+	#contornos, arvore = cv2.findContours(segmentado_cor.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+	img_out, contornos, arvore = cv2.findContours(segmentado_cor.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
 	maior_contorno = None
 	maior_contorno_area = 0
