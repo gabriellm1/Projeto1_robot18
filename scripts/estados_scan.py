@@ -28,8 +28,7 @@ import featurestest
 bridge = CvBridge()
 
 cv_image = None
-global distances
-global distMin
+global menorDist
 
 aceleracao = []
 media_feature = []
@@ -40,6 +39,7 @@ centro = []
 area = 0.0
 distances = []
 distMin = []
+menorDist = []
 
 
 tolerancia_x = 50
