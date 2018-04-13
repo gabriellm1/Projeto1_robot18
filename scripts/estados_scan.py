@@ -21,7 +21,8 @@ from sensor_msgs.msg import Imu
 import transformations
 import math
 import cormodule
-import featuremodule
+#import featuremodule
+import featurestest
 
 
 bridge = CvBridge()
@@ -31,8 +32,8 @@ global distances
 global distMin
 
 aceleracao = []
-
-
+media_feature = []
+centro_feature = []
 # Variáveis para permitir que o roda_todo_frame troque dados com a máquina de estados
 media = []
 centro = []
@@ -94,7 +95,8 @@ def roda_todo_frame(imagem):
 	global area
 	global menorDist
 	global aceleracao
-
+	global media_feature
+	global centro_feature
 	now = rospy.get_rostime()
 	imgtime = imagem.header.stamp
 	lag = now-imgtime
@@ -105,7 +107,7 @@ def roda_todo_frame(imagem):
 		antes = time.clock()
 		cv_image = bridge.compressed_imgmsg_to_cv2(imagem, "bgr8")
 		media, centro, area = cormodule.identifica_cor(cv_image)
-		media_feature , centro_feature = featuremodule.indentifica_feature(cv_image)
+		media_feature , centro_feature = featurestest.identifica_feature(cv_image)
 		#scaneou(cv_image)
 		depois = time.clock()
 		cv2.imshow("Camera", cv_image)
@@ -138,7 +140,8 @@ class Girando(smach.State):
 		# 	velocidade_saida.publish(vel)
 		# 	print("Bateu!")
 		# 	return 'brecar'
-		if media_feature:
+		print(media_feature)
+		if len(media_feature) != 0:
 			return 'ré'
 		if media is None or len(media)==0:
 			return 'girando' #Continua girando
@@ -223,7 +226,7 @@ class Fugir(smach.State):
 			else:
 				return 'ré'  # alinhaNdo volta pro girando(busca)
 
-		
+
 # main
 def main():
 	global velocidade_saida
