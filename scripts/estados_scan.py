@@ -129,7 +129,7 @@ class Girando(smach.State):
 		global aceleracao
 
 		if aceleracao:
-			if aceleracao < -2:
+			if aceleracao < -1:
 				print("Brecaaaaaaaaaaaaaaaaaaaaaaaaaaaaar")
 				return 'brecar'
 		# if aceleracao: #and aceleracao < -2:
