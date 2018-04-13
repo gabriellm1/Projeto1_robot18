@@ -19,7 +19,7 @@ media = []
 
 atraso = 1.5E8
 
-MIN_MATCH_COUNT=15
+MIN_MATCH_COUNT=40
 
 detector=cv2.xfeatures2d.SIFT_create()
 
