@@ -12,6 +12,7 @@ import math
 
 
 def leu_imu(dado):
+	global aceleracao
 	quat = dado.orientation
 	lista = [quat.x, quat.y, quat.z, quat.w]
 	angulos = np.degrees(transformations.euler_from_quaternion(lista))
@@ -26,16 +27,15 @@ def leu_imu(dado):
 	z: {:.2f}
 
 
-""".format(dado.header.stamp, angulos[0], angulos[1], angulos[2], dado.angular_velocity.x, dado.angular_velocity.y, dado.angular_velocity.z, dado.linear_acceleration.x, dado.linear_acceleration.y, dado.linear_acceleration.z)
+""".format(dado.header.stamp, angulos[0], angulos[1], angulos[2], dado.m.x, dado.angular_velocity.y, dado.angular_velocity.z, dado.linear_acceleration.x, dado.linear_acceleration.y, dado.linear_acceleration.z)
 	print(mensagem)
 
-	
+	aceleracao = dado.linear_acceleration.x
 
 
 if __name__=="__main__":
 
 	rospy.init_node("le_imu")
-
 	recebe_scan = rospy.Subscriber("/imu", Imu, leu_imu)
 
 	while not rospy.is_shutdown():
