@@ -39,6 +39,7 @@ media = []
 centro = []
 area = 0.0
 distances = []
+distMin = []
 
 
 tolerancia_x = 50
@@ -212,9 +213,9 @@ class Fugir(smach.State):
 		global menorDist
 		global aceleracao
 
-		if media_feature or media_feature == (0,0) is None:
+		if media_feature == (0,0) or media_feature is None:
 			return 'girando'
-		if  media_feature:
+		if  media_feature and media_feature != (0,0):
 			if menorDist:
 				if menorDist > 0.2: #Falta ver a métrica da distancia e estipular uma distancia minima
 					vel = Twist(Vector3(-0.1, 0, 0), Vector3(0, 0, 0))
