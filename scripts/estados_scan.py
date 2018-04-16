@@ -21,8 +21,8 @@ from sensor_msgs.msg import Imu
 import transformations
 import math
 import cormodule
-#import featuremodule
-import featurestest
+import featuremodule
+#import featurestest
 
 
 bridge = CvBridge()
@@ -70,7 +70,7 @@ def leu_imu(dado):
 
 
 """.format(dado.header.stamp, angulos[0], angulos[1], angulos[2], dado.angular_velocity.x, dado.angular_velocity.y, dado.angular_velocity.z, dado.linear_acceleration.x, dado.linear_acceleration.y, dado.linear_acceleration.z)
-	print(mensagem)
+	#print(mensagem)
 
 
 def scaneou(dado):
@@ -108,7 +108,7 @@ def roda_todo_frame(imagem):
 		antes = time.clock()
 		cv_image = bridge.compressed_imgmsg_to_cv2(imagem, "bgr8")
 		media, centro, area = cormodule.identifica_cor(cv_image)
-		media_feature , centro_feature = featurestest.identifica_feature(cv_image)
+		media_feature, centro_feature =  featuremodule.testeteste(cv_image)
 		#scaneou(cv_image)
 		depois = time.clock()
 		cv2.imshow("Camera", cv_image)
@@ -134,13 +134,15 @@ class Girando(smach.State):
 
 		if aceleracao:
 			if aceleracao < -1:
-				print("Brecaaaaaaaaaaaaaaaaaaaaaaaaaaaaar")
+				print("Brecaaar")
 				return 'brecar'
 		# if aceleracao: #and aceleracao < -2:
 		# 	vel = Twist(Vector3(-1, 0, 0), Vector3(0, 0, 0))
 		# 	velocidade_saida.publish(vel)
 		# 	print("Bateu!")
 		# 	return 'brecar'
+		print(media_feature)
+		print(media_feature)
 		print(media_feature)
 		if media_feature:
 			if media_feature != (0,0):
@@ -172,7 +174,7 @@ class Centralizado(smach.State):
 		global velocidade_saida
 		global menorDist
 		global aceleracao
-
+		print(media_feature)
 		if aceleracao:
 			if aceleracao < -2:
 				print("Brecaaaaaaaaaaaaaaaaaaaaaaaaaaaaar")
