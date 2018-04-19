@@ -164,7 +164,7 @@ media_cor=[]
 
 tolerancia_x = 100
 tolerancia_y = 50
-ang_speed = 0.4
+ang_speed = 0.2
 area_ideal = 60000 # área da distancia ideal do contorno - note que varia com a resolução da câmera
 tolerancia_area = 20000
 
@@ -257,7 +257,9 @@ class Girando(smach.State):
 			print(aceleracao)
 			print(aceleracao)
 			print(aceleracao)
-			if aceleracao < -1:
+			if aceleracao < -0.5:
+				vel = Twist(Vector3(-0.2, 0, 0), Vector3(0, 0, ang_speed))
+				velocidade_saida.publish(vel)
 				print("Brecaaar")
 				return 'brecar'
 		# if aceleracao: #and aceleracao < -2:
@@ -326,9 +328,9 @@ class Parar(smach.State):
 		global aceleracao
 		rospy.sleep(dormir)
 		if aceleracao:
-			if aceleracao > 0.8:
+			if aceleracao > 0.5:
 				print("Bateu de ré")
-				vel = Twist(Vector3(1, 0, 0), Vector3(0, 0, 0))
+				vel = Twist(Vector3(2, 0, 0), Vector3(0, 0, 0))
 				velocidade_saida.publish(vel)
 				return 'girando'
 		if menorDist < 0.2:
@@ -365,8 +367,9 @@ class Fugir(smach.State):
 					velocidade_saida.publish(vel)
 					return 'ré' # Continua seguindo reto
 				else:
-					vel = Twist(Vector3(0.1, 0, 0), Vector3(0, 0, 0))
+					vel = Twist(Vector3(0.2, 0, 0), Vector3(0, 0, 0))
 					velocidade_saida.publish(vel)
+					rospy.sleep(dormir/50)
 					return 'brecar' #Breca pra dps dar ré
 			else:
 				return 'ré'  # alinhaNdo volta pro girando(busca)
